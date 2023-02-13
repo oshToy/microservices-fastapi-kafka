@@ -5,7 +5,7 @@ from sqlalchemy import MetaData
 from typing import List, Dict, Union
 from core.singleton import MetaSingleton
 from core import config_loader as config_loader
-from constants import DB_NAMING_CONVENTION
+from core.constants import DB_NAMING_CONVENTION
 
 logger = logging.getLogger(__name__)
 config = config_loader.Config()
@@ -17,6 +17,7 @@ class DB(metaclass=MetaSingleton):
         self.metadata_obj: MetaData = MetaData(naming_convention=DB_NAMING_CONVENTION)
 
     def __create_engine(self) -> AsyncEngine:
+        logger.error(config.get(config_loader.DB_URI))
         engine = create_async_engine(
             config.get(config_loader.DB_URI),
             echo=True,
@@ -29,7 +30,7 @@ class DB(metaclass=MetaSingleton):
             return None
         d = {}
         for column in row.__table__.columns:
-            d[column.name] = str(getattr(row, column.name))
+            d[column.name] = getattr(row, column.name)
         return d
 
     @classmethod

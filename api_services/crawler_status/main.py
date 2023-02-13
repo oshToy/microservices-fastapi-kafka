@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from starlette_exporter import PrometheusMiddleware, handle_metrics
 import core.config_loader as config_loader
 
-config = config_loader.Config(env_namespace="API_CRAWLER_REQUEST")
+config = config_loader.Config(env_namespace="API_CRAWLER_STATUS")
 
 from core.db import DB
 from models import Base
@@ -14,7 +14,7 @@ import routes
 logging.basicConfig(level=config.get(config_loader.LOGGING_LEVEL))
 logger = logging.getLogger("uvicorn.error")
 
-app = FastAPI(title="CRAWL REQUEST")
+app = FastAPI(title="CRAWL STATUS")
 app.include_router(routes.router)
 
 # METRICS TO Prometheus
@@ -35,6 +35,7 @@ async def init_tables():
         await conn.run_sync(Base.metadata.create_all)
 
 
+# todo export the server activation to core class
 if __name__ == "__main__":
     logger.info("Starting server")
     logger.warning("To start server use command: uvicorn main:app --reload")

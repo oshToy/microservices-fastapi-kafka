@@ -2,6 +2,6 @@ LOGGING_LEVEL: 'INFO'
 LOGGING_FORMAT: '%(asctime)-15s | %(levelname)s | %(filename)s | %(lineno)d: %(message)s'
 
 WEB_HOST: '0.0.0.0'
-WEB_PORT: 8000
+WEB_PORT: 8001
 
-DB_URI: "postgresql+asyncpg://postgres:postgres@db_crawler_requests:5432/crawlers"
+DB_URI: "postgresql+asyncpg://postgres:postgres@db_crawler_status:5433/crawlers_status"

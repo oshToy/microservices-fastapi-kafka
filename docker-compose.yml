@@ -1,7 +1,16 @@
 version: '3'
 
 services:
-  db:
+  # infra
+  prometheus:
+    image: quay.io/prometheus/prometheus:${PROMETHEUS_VERSION}
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+    volumes:
+      - ./prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  # api_crawler_request micro service
+  db_crawler_request:
     image: postgres:${PG_VERSION}
     restart: always
     environment:
@@ -11,8 +20,57 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql
     ports:
-      - ${PG_PORT}:5432
+      - ${DB_CRAWLER_REQUEST_PORT}:5432
 
+  api_crawler_request:
+    build:
+      context: ./api_services
+    restart: always
+    # bind dev volume for hot reload
+    volumes:
+      - ./api_services/crawler_request:/app
+      - ./api_services/core:/app/core
+    ports:
+      - ${API_CRAWLER_REQUEST_PORT}:8000
+    environment:
+      - API_NAME=crawler_request
+      - PORT=8000
+      - HOST=0.0.0.0
+      - API_CRAWLER_REQUEST_DB_URI=postgresql+asyncpg://postgres:postgres@db_crawler_request:5432/crawlers
+    depends_on:
+      - db_crawler_request
+
+  # api_crawler_status micro service
+  db_crawler_status:
+    image: postgres:${PG_VERSION}
+    restart: always
+    environment:
+      POSTGRES_DB: crawlers
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./postgres-data:/var/lib/postgresql
+    ports:
+      - ${DB_CRAWLER_STATUS_PORT}:5432
+
+  api_crawler_status:
+    build:
+      context: ./api_services
+    restart: always
+    # bind dev volume for hot reload
+    volumes:
+      - ./api_services/crawler_status:/app
+      - ./api_services/core:/app/core
+    ports:
+      - ${API_CRAWLER_STATUS_PORT}:8001
+    environment:
+      - API_NAME=crawler_status
+      - PORT=8001
+      - HOST=0.0.0.0
+      - API_CRAWLER_STATUS_DB_URI=postgresql+asyncpg://postgres:postgres@db_crawler_status:5432/crawlers
+    depends_on:
+      - db_crawler_status
+  # post infra
   pgadmin:
     image: chorss/docker-pgadmin4
     restart: always
@@ -23,29 +81,5 @@ services:
     ports:
       - ${PG_ADMIN_PORT}:5050
     depends_on:
-      - db
-
-  prometheus:
-    image: quay.io/prometheus/prometheus:${PROMETHEUS_VERSION}
-    ports:
-      - ${PROMETHEUS_PORT}:9090
-    volumes:
-      - ./prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
-
-  # Microservices
-  api_crawl_request:
-    build:
-      context: ./api_services
-    restart: always
-    # bind dev volume for hot reload
-    volumes:
-      - ./api_services/crawler_request:/app
-      - ./api_services/core:/app/core
-
-    ports:
-      - ${API_CRAWL_REQUEST_PORT}:8000
-    environment:
-      - API_NAME=crawler_request
-      - PORT=8000
-      - HOST=0.0.0.0
-      - API_CRAWL_REQUEST_DB_URI=postgresql+asyncpg://postgres:postgres@db:5432/crawlers
+      - db_crawler_request
+      - db_crawler_status

@@ -1,8 +1,7 @@
 from models import Crawler
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
-from db import DB
-from sqlalchemy.future import select
+from core.db import DB
 from typing import List, Dict
 from pydantic import UUID4
 from core.api_service import ApiService, InsertResponse

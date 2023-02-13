@@ -6,10 +6,12 @@ config_abs_path = "/".join(os.path.abspath(__file__).split("/")[0:-1])
 
 
 class Config(metaclass=MetaSingleton):
-    def __init__(self, config_file_path=f"{config_abs_path}/config.yml"):
+    def __init__(
+        self, env_namespace="", config_file_path=f"{config_abs_path}/config.yml"
+    ):
         self.config_loader = ConfigLoader()
         self.config_loader.update_from_yaml_file(config_file_path)
-        self.config_loader.update_from_env_namespace("API_CRAWL_REQUEST")
+        self.config_loader.update_from_env_namespace(env_namespace)
 
     def get(self, setting_name):
         return self.config_loader.get(setting_name, None)

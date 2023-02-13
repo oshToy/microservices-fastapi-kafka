@@ -1,11 +1,9 @@
 from typing import List, Dict
 from fastapi import APIRouter
-from core import config_loader as config_loader
 from service import CrawlerRequestService, InsertResponse
 from pydantic import BaseModel, HttpUrl, UUID4
 import metrics as metrics
 
-config = config_loader.Config()
 
 router = APIRouter()
 
