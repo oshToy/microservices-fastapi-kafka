@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio.engine import AsyncEngine
 from sqlalchemy import MetaData
 from typing import List, Dict, Union
-from singleton import MetaSingleton
-import config_loader as config_loader
+from core.singleton import MetaSingleton
+from core import config_loader as config_loader
 from constants import DB_NAMING_CONVENTION
 
 logger = logging.getLogger(__name__)

@@ -1,14 +1,15 @@
-import datetime
 from typing import List, Dict
 from fastapi import APIRouter
-import config_loader as config_loader
-import metrics
-from service import CrawlerRequestService
+from core import config_loader as config_loader
+from service import CrawlerRequestService, InsertResponse
 from pydantic import BaseModel, HttpUrl, UUID4
+import metrics as metrics
 
 config = config_loader.Config()
 
 router = APIRouter()
+
+crawl_service = CrawlerRequestService()
 
 
 class CrawlRequest(BaseModel):
@@ -22,25 +23,19 @@ class CrawlRequest(BaseModel):
         }
 
 
-class PostResponse(BaseModel):
-    id: UUID4
-    html_url: HttpUrl
-    create_at: datetime.datetime
-
-
 @router.post("/crawler", tags=["crawler"])
-async def post_crawler(crawl_request: CrawlRequest) -> None:
+async def post_crawler(crawl_request: CrawlRequest) -> InsertResponse:
     metrics.POST_CRAWLER_CNT.inc()
-    return await CrawlerRequestService.save_crawler(crawl_request.html_url)
+    return await crawl_service.save_crawler(crawl_request.html_url)
 
 
 @router.get("/crawler/{crawler_id}", tags=["crawler"])
 async def get_crawler_by_id(crawler_id: UUID4) -> Dict:
     metrics.GET_CRAWLER_BY_ID_CNT.inc()
-    return await CrawlerRequestService.get_crawler_by_id(crawler_id)
+    return await crawl_service.get_crawler_by_id(crawler_id)
 
 
 @router.get("/crawler", tags=["crawler"])
 async def get_all_crawlers() -> List[Dict]:
     metrics.GET_ALL_CRAWLERS_CNT.inc()
-    return await CrawlerRequestService.get_all_crawlers()
+    return await crawl_service.get_all_crawlers()

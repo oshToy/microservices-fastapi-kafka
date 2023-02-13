@@ -2,13 +2,14 @@ import uvicorn
 import logging
 from fastapi import FastAPI
 from starlette_exporter import PrometheusMiddleware, handle_metrics
-import config_loader as config_loader
-import routes
+import core.config_loader as config_loader
 from db import DB
 from models import Base
+import routes
 
 config = config_loader.Config()
 
+logging.basicConfig(level=config.get(config_loader.LOGGING_LEVEL))
 logger = logging.getLogger("uvicorn.error")
 
 app = FastAPI(title="CRAWL REQUEST")
@@ -24,6 +25,7 @@ async def healthcheck():
     return {"status": "ok"}
 
 
+# TODO ONLY DEV !!!
 @app.on_event("startup")
 async def init_tables():
     async with DB().db_engine.begin() as conn:

@@ -13,9 +13,9 @@ COPY ./requirements.txt /requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r /requirements.txt
 
-COPY ./app /app
+COPY ./$API_NAME /app
+COPY ./core /app/core
 
-
-ENV HOST 0.0.0.0
+ENV HOST 127.0.0.1
 ENV PORT 8007
 CMD uvicorn main:app --reload --host $HOST --port $PORT

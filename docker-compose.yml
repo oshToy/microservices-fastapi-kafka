@@ -35,14 +35,17 @@ services:
   # Microservices
   api_crawl_request:
     build:
-      context: ./api_crawl_request
+      context: ./api_services
     restart: always
     # bind dev volume for hot reload
     volumes:
-      - ./api_crawl_request/app:/app
+      - ./api_services/crawler_request:/app
+      - ./api_services/core:/app/core
+
     ports:
       - ${API_CRAWL_REQUEST_PORT}:8000
     environment:
+      - API_NAME=crawler_request
       - PORT=8000
       - HOST=0.0.0.0
       - API_CRAWL_REQUEST_DB_URI=postgresql+asyncpg://postgres:postgres@db:5432/crawlers
