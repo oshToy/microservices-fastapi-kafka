@@ -1,0 +1,8 @@
+LOGGING_LEVEL: 'INFO'
+LOGGING_FORMAT: '%(asctime)-15s | %(levelname)s | %(filename)s | %(lineno)d: %(message)s'
+
+KAFKA_BROKER: "127.0.0.1:9093"
+SOURCE_CRAWLER_REQUEST_TOPIC: "crawler-request"
+PRODUCE_CRAWLER_STATUS_TOPIC: "crawler-status"
+
+PROMETHEUS_PORT: 7002
