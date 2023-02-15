@@ -1,4 +1,4 @@
-# Microservices - KAFKA FastAPI Fasut
+# Microservices - Kafka, FastAPI, Fasut
 
 ## Project Description
 The Application is real time web crawler system.
