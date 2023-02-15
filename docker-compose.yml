@@ -137,19 +137,23 @@ services:
       kafka:
         condition: service_healthy
 
-#  html_crawler:
-#    build:
-#      context: ./processors/html_crawler
-#    restart: always
-#    volumes:
-#      - ./processors/html_crawler/src:/app
-#    ports:
-#      - ${HTML_CRAWLER_METRICS_PORT}:7002
-#    environment:
-#      - DATA_PROCESSOR_KAFKA_BROKER=kafka:9092
-#    depends_on:
-#      kafka:
-#        condition: service_healthy
+  html_crawler:
+    build:
+      context: ./processors/html_crawler
+    restart: always
+    volumes:
+      - ./processors/html_crawler/src/files:/app/files
+    ports:
+      - ${HTML_CRAWLER_METRICS_PORT}:7002
+    environment:
+      - DATA_PROCESSOR_KAFKA_BROKER=kafka:9092
+      - DATA_PROCESSOR_SOURCE_CRAWLER_REQUEST_TOPIC=crawler-request
+      - DATA_PROCESSOR_PRODUCE_CRAWLER_STATUS_TOPIC=crawler-status
+      - DATA_PROCESSOR_URL_CACHE_TABLE_NAME=url_cache
+
+    depends_on:
+      kafka:
+        condition: service_healthy
 
   # post infra
   pgadmin:

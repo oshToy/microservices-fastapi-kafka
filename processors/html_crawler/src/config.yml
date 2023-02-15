@@ -1,8 +1,12 @@
 LOGGING_LEVEL: 'INFO'
 LOGGING_FORMAT: '%(asctime)-15s | %(levelname)s | %(filename)s | %(lineno)d: %(message)s'
 
+SERVICE_NAME: "html_crawler"
+
 KAFKA_BROKER: "127.0.0.1:9093"
 SOURCE_CRAWLER_REQUEST_TOPIC: "crawler-request"
 PRODUCE_CRAWLER_STATUS_TOPIC: "crawler-status"
+URL_CACHE_TABLE_NAME: "url_cache"
 
+CACHE_MAX_AGE_DAYS: 7
 PROMETHEUS_PORT: 7002

@@ -8,7 +8,6 @@ from typing import Dict, Union, List
 from pydantic import UUID4
 from core.api_service import ApiService, InsertResponse
 from datetime import datetime
-from sqlalchemy.sql.dml import DMLWhereBase
 
 logger = logging.getLogger(__name__)
 db = DB()
