@@ -16,23 +16,39 @@ db = DB()
 
 class CrawlStatusMessageValue:
     def __init__(
-        self, status: Status, process_at: Union[str, None] = None, file_path: str = None
+        self,
+        status: Status,
+        process_at: Union[str, None] = None,
+        fetch_at: Union[str, None] = None,
+        file_path: str = None,
     ):
         self.status: Status = status
         self.file_path: Union[str, None] = file_path
         self.process_at: datetime = process_at
+        self.fetch_at: Union[datetime, None] = fetch_at
         self.allowed_prev_statuses: List[Status] = status
 
     @property
-    def process_at(self) -> datetime:
+    def process_at(self) -> Union[datetime, None]:
         return self._process_at
 
     @process_at.setter
     def process_at(self, str_time: Union[str, None]):
         if not str_time:
-            self._process_at: datetime = datetime.utcnow()
+            self._process_at: None = None
         else:
             self._process_at: datetime = datetime.fromisoformat(str_time)
+
+    @property
+    def fetch_at(self) -> datetime:
+        return self._fetch_at
+
+    @fetch_at.setter
+    def fetch_at(self, str_time: Union[str, None]):
+        if not str_time:
+            self._fetch_at: datetime = datetime.utcnow()
+        else:
+            self._fetch_at: datetime = datetime.fromisoformat(str_time)
 
     @property
     def allowed_prev_statuses(self) -> List[Status]:
@@ -48,6 +64,7 @@ class CrawlStatusMessageValue:
         update_dict = {"status": self.status, "process_at": self.process_at}
         if self.file_path:
             update_dict["file_path"] = self.file_path
+            update_dict["fetch_at"] = self.fetch_at
         return update_dict
 
 
