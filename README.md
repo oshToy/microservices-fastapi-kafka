@@ -18,7 +18,9 @@ processing ) , Running, Error ( error occurred during the crawl ) , Complete. It
 ## Architecture
 ![Architecture](https://user-images.githubusercontent.com/35071710/219124194-1d110218-909e-4f89-8a93-9784117f8093.png)
 
-## [Postman Collection](https://elements.getpostman.com/redirect?entityId=10168156-2950ceb9-e306-4e3a-8c2c-3d0e8523dd6b&entityType=collection)
+## Postman Collection
+[public collection](https://elements.getpostman.com/redirect?entityId=10168156-2950ceb9-e306-4e3a-8c2c-3d0e8523dd6b&entityType=collection)
+
 The collection contains 2 dierctory
 1. Crawler requests API
 2. Crawler Status API
