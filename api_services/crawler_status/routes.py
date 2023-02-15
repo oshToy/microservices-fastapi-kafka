@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, Dict
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from service import CrawlStatusService, InsertResponse
 from pydantic import BaseModel, UUID4, HttpUrl
 import metrics as metrics
@@ -43,7 +43,11 @@ async def post_crawler_status(crawl_status: CrawlStatusPostRequest) -> InsertRes
 async def update_item(status_id: str, crawl_status: CrawlStatusRequest):
     metrics.PUT_CRAWLER_STATUS_CNT.inc()
     return await crawl_status_service.update_crawler_status(
-        status_id=status_id, **jsonable_encoder(crawl_status)
+        status_id=status_id,
+        **jsonable_encoder(crawl_status),
+        allowed_prev_statuses=CrawlStatusService.get_allowed_prev_statuses(
+            crawl_status.status
+        )
     )
 
 
@@ -51,3 +55,14 @@ async def update_item(status_id: str, crawl_status: CrawlStatusRequest):
 async def get_crawler_by_id(status_id: UUID4) -> Dict:
     metrics.GET_CRAWLER_STATUS_BY_ID_CNT.inc()
     return await crawl_status_service.get_crawler_status_by_id(status_id)
+
+
+async def handle_status_updates(msg):
+    metrics.BEGIN_UPDATE_CRAWLER_STATUS_BY_MESSAGE_CNT.inc()
+    res = await crawl_status_service.handle_status_updates(msg)
+    if len(res) != 1:
+        metrics.FAILED_UPDATE_CRAWLER_STATUS_BY_MESSAGE_CNT.inc()
+        logging.warning("Failed to handle_status_updates")
+    logging.info("success to handle_status_updates")
+    metrics.DONE_UPDATE_CRAWLER_STATUS_BY_MESSAGE_CNT.inc()
+    return res

@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'api_crawl_request'
+    metrics_path: /metrics
+    static_configs:
+      - targets: [ 'api_crawl_request:8000' ]
+  - job_name: 'api_crawler_status'
+    metrics_path: /metrics
+    static_configs:
+      - targets: [ 'api_crawler_status:8001' ]
+  - job_name: 'html_crawler'
+    static_configs:
+      - targets: [ 'html_crawler:7002' ]

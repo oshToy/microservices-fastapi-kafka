@@ -4,4 +4,9 @@ LOGGING_FORMAT: '%(asctime)-15s | %(levelname)s | %(filename)s | %(lineno)d: %(m
 WEB_HOST: '0.0.0.0'
 WEB_PORT: 8000
 
+# DB
 DB_URI: "postgresql+asyncpg://postgres:postgres@db_crawler_requests:5432/crawlers"
+
+# KAFKA
+KAFKA_BROKER: "kafka:9092"
+NEW_CRAWLER_REQUEST_TOPIC: "crawler-request"

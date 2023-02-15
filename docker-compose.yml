@@ -2,12 +2,70 @@ version: '3'
 
 services:
   # infra
+  zookeeper:
+    image: zookeeper:${ZK_VERSION}
+    ports:
+      - ${ZK_PORT}:2181
+    restart: always
+    volumes:
+      - ./zk-data:/var/lib/zookeeper/data \
+      - ./zk-txn-logs:/var/lib/zookeeper/log \
+
+  kafka:
+    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+    depends_on:
+      - zookeeper
+    ports:
+      - ${KAFKA_PORT}:9092
+      - ${KAFKA_LOCALHOST_PORT}:9093
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,PLAINTEXT://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,PLAINTEXT://localhost:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: INFO
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_MESSAGE_MAX_BYTES: 10485760
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 100001200
+    restart: always
+    volumes:
+      - ./kafka-data:/var/lib/kafka/data
+    # http://java.msk.ru/add-healthchecks-for-apache-kafka-in-docker-compose/
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 60s
+      interval: 5s
+      timeout: 200s
+      retries: 20
+
+  kafka-config-init:
+    image: confluentinc/cp-kafka:${CONFLUENT_VERSION}
+    depends_on:
+      - kafka
+    volumes:
+      - ./infra/docker/wait-for-it.sh:/wait-for-it.sh
+    command: |
+      bash -c '/wait-for-it.sh --timeout=0 -s kafka:9092 && \
+      kafka-topics --create --if-not-exists --topic crawler-request --partitions 8 --replication-factor 1  --bootstrap-server kafka:9092 && \
+      kafka-topics --create --if-not-exists --topic crawler-status --partitions 8 --replication-factor 1  --bootstrap-server kafka:9092 && \
+      exit 0'
+    environment:
+      KAFKA_BROKER_ID: ignored
+      KAFKA_ZOOKEEPER_CONNECT: ignored
+
+
   prometheus:
     image: quay.io/prometheus/prometheus:${PROMETHEUS_VERSION}
     ports:
       - ${PROMETHEUS_PORT}:9090
     volumes:
-      - ./prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
 
   # api_crawler_request micro service
   db_crawler_request:
@@ -37,8 +95,11 @@ services:
       - PORT=8000
       - HOST=0.0.0.0
       - API_CRAWLER_REQUEST_DB_URI=postgresql+asyncpg://postgres:postgres@db_crawler_request:5432/crawlers
+      - API_CRAWLER_REQUEST_KAFKA_BROKER=kafka:9092
+      - API_CRAWLER_REQUEST_CRAWLER_REQUEST_TOPIC=crawler-request
     depends_on:
-      - db_crawler_request
+      kafka:
+        condition: service_healthy
 
   # api_crawler_status micro service
   db_crawler_status:
@@ -68,8 +129,27 @@ services:
       - PORT=8001
       - HOST=0.0.0.0
       - API_CRAWLER_STATUS_DB_URI=postgresql+asyncpg://postgres:postgres@db_crawler_status:5432/crawlers
+      - API_CRAWLER_STATUS_KAFKA_BROKER=kafka:9092
+      - API_CRAWLER_STATUS_CONSUMER_GROUP_ID=api-crawler-status
+      - API_CRAWLER_STATUS_CRAWLER_STATUS_TOPIC=crawler-status
     depends_on:
-      - db_crawler_status
+      kafka:
+        condition: service_healthy
+
+#  html_crawler:
+#    build:
+#      context: ./processors/html_crawler
+#    restart: always
+#    volumes:
+#      - ./processors/html_crawler/src:/app
+#    ports:
+#      - ${HTML_CRAWLER_METRICS_PORT}:7002
+#    environment:
+#      - DATA_PROCESSOR_KAFKA_BROKER=kafka:9092
+#    depends_on:
+#      kafka:
+#        condition: service_healthy
+
   # post infra
   pgadmin:
     image: chorss/docker-pgadmin4

@@ -49,3 +49,4 @@ uvloop==0.17.0
 virtualenv==20.19.0
 watchfiles==0.18.1
 websockets==10.4
+aiokafka~=0.8.0

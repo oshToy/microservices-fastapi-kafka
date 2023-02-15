@@ -2,7 +2,7 @@ from sqlalchemy import Column, DateTime, func, String
 import uuid
 from sqlalchemy.orm import declarative_base
 from core.db import DB
-from core.models import BaseEntityModel
+from core.core_models import BaseEntityModel
 
 Base = declarative_base(metadata=DB().metadata_obj)
 

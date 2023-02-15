@@ -1,7 +1,6 @@
-from sqlalchemy import Column, String, Enum as sqlEnum
+from sqlalchemy import Column, String, Enum as sqlEnum, DateTime, func
 from sqlalchemy.orm import declarative_base
 from core.db import DB
-from core.models import BaseEntityModel
 from enum import Enum
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -20,3 +19,5 @@ class CrawlerStatus(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     status = Column(sqlEnum(Status), nullable=False)
     file_path = Column(String, nullable=True)
+    create_at = Column(DateTime, server_default=func.now())
+    update_at = Column(DateTime, server_default=func.now())

@@ -2,7 +2,7 @@ from sqlalchemy import insert, update, Executable
 from core.singleton import MetaSingleton
 from fastapi import HTTPException
 from typing_extensions import TypedDict
-from models import BaseEntityModel
+from core.core_models import BaseEntityModel
 from pydantic import UUID4
 from sqlalchemy.ext.asyncio import AsyncSession
 from asyncpg.exceptions import UniqueViolationError, NotNullViolationError
@@ -50,17 +50,22 @@ class ApiService(metaclass=MetaSingleton):
         self,
         async_session: AsyncSession,
         entity_id: UUID4,
+        where_clauses: list,
         allow_change_id=False,
         **values,
     ):
         logger.info(f"Try to Update Entity {values}")
         if allow_change_id is False and "id" in values:
             del values["id"]
+
+        update_statement = update(self.entity_model).where(
+            self.entity_model.id == entity_id
+        )
+        for where_clause in where_clauses:
+            update_statement = update_statement.where(where_clause)
+
         update_result = await self.execute(
-            async_session,
-            update(self.entity_model)
-            .where(self.entity_model.id == entity_id)
-            .values(**values),
+            async_session, update_statement.values(**values)
         )
         row_counts = update_result.rowcount
         if row_counts == 0:
@@ -92,5 +97,10 @@ class ApiService(metaclass=MetaSingleton):
 
     @staticmethod
     def raise_not_found_exception(entity_id: UUID4):
-        logger.info(f"entity did not found: {entity_id}")
-        raise HTTPException(status_code=404, detail="entity did not found")
+        logger.info(
+            f"entity did not found: {entity_id} OR not allowed action - filtered out"
+        )
+        raise HTTPException(
+            status_code=404,
+            detail="entity did not found OR not allowed action - filtered out",
+        )

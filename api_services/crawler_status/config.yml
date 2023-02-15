@@ -5,3 +5,8 @@ WEB_HOST: '0.0.0.0'
 WEB_PORT: 8001
 
 DB_URI: "postgresql+asyncpg://postgres:postgres@db_crawler_status:5433/crawlers_status"
+
+# KAFKA
+KAFKA_BROKER: "kafka:9092"
+CRAWLER_STATUS_TOPIC: "crawler-status"
+CONSUMER_GROUP_ID: "api-crawler-status"
