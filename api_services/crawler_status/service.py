@@ -16,23 +16,23 @@ db = DB()
 
 class CrawlStatusMessageValue:
     def __init__(
-        self, status: Status, create_at: Union[str, None] = None, file_path: str = None
+        self, status: Status, process_at: Union[str, None] = None, file_path: str = None
     ):
         self.status: Status = status
         self.file_path: Union[str, None] = file_path
-        self.create_at: datetime = create_at
+        self.process_at: datetime = process_at
         self.allowed_prev_statuses: List[Status] = status
 
     @property
-    def create_at(self) -> datetime:
-        return self._create_at
+    def process_at(self) -> datetime:
+        return self._process_at
 
-    @create_at.setter
-    def create_at(self, str_time: Union[str, None]):
+    @process_at.setter
+    def process_at(self, str_time: Union[str, None]):
         if not str_time:
-            self._create_at: datetime = datetime.utcnow()
+            self._process_at: datetime = datetime.utcnow()
         else:
-            self._create_at: datetime = datetime.fromisoformat(str_time)
+            self._process_at: datetime = datetime.fromisoformat(str_time)
 
     @property
     def allowed_prev_statuses(self) -> List[Status]:
@@ -45,7 +45,7 @@ class CrawlStatusMessageValue:
         )
 
     def to_update_dict(self):
-        update_dict = {"status": self.status, "update_at": self.create_at}
+        update_dict = {"status": self.status, "process_at": self.process_at}
         if self.file_path:
             update_dict["file_path"] = self.file_path
         return update_dict
@@ -82,10 +82,12 @@ class CrawlStatusService(ApiService):
         self,
         status_id: UUID4,
         allowed_prev_statuses: List[Status],
-        update_at: datetime = datetime.utcnow(),
+        update_at: datetime = None,
         upsert: bool = False,
         **values,
     ) -> InsertResponse:
+        if not update_at:
+            update_at = datetime.utcnow()
         async with AsyncSession(db.db_engine) as async_session:
             async with async_session.begin():
                 logger.info(f"Update crawler status for {status_id} with {values}")

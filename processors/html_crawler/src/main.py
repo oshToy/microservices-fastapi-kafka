@@ -40,12 +40,13 @@ class CrawlStatusMessage(faust.Record, ABC, serializer="json", isodates=True):
     id: str
     status: str
     file_path: Union[str, None]
-    create_at: datetime
+    process_at: datetime
 
     async def produce_status_message(self):
-        await produce_crawler_status_topic.send(
-            key=self.id, value={"status": self.status, "create_at": self.create_at}
-        )
+        message = {"status": self.status, "process_at": self.process_at}
+        if self.file_path:
+            message["file_path"] = self.file_path
+        await produce_crawler_status_topic.send(key=self.id, value=message)
 
 
 src_crawler_request_topic = app.topic(
@@ -65,12 +66,13 @@ async def process_crawl_request(requests) -> None:
         request: CrawlRequest
         logger.info(f"Received new CrawlRequest {request}")
         await CrawlStatusMessage(
-            id=request.id, status=Status.Running.value, create_at=datetime.utcnow()
+            id=request.id, status=Status.Running.value, process_at=datetime.utcnow()
         ).produce_status_message()
 
         async with session.get(request.html_url) as response:
             try:
-                with open(f"./files/{request.id}.html", "w", encoding="utf8") as fp:
+                file_path = f"./files/{request.id}.html"
+                with open(file_path, "w", encoding="utf8") as fp:
                     while True:
                         chunk = await response.content.read(8 * 1000)
                         fp.write(chunk.decode())
@@ -82,14 +84,15 @@ async def process_crawl_request(requests) -> None:
                 await CrawlStatusMessage(
                     id=request.id,
                     status=Status.Error.value,
-                    create_at=datetime.utcnow(),
+                    process_at=datetime.utcnow(),
                 ).produce_status_message()
             else:
                 metrics.SOURCE_CRAWLER_REQUEST_COMPLETE_CNT.inc()
                 await CrawlStatusMessage(
                     id=request.id,
                     status=Status.Complete.value,
-                    create_at=datetime.utcnow(),
+                    process_at=datetime.utcnow(),
+                    file_path=file_path,
                 ).produce_status_message()
 
 

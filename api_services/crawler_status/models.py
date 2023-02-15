@@ -14,3 +14,4 @@ class CrawlerStatus(Base):
     file_path = Column(String, nullable=True)
     create_at = Column(DateTime, server_default=func.now())
     update_at = Column(DateTime, server_default=func.now())
+    process_at = Column(DateTime)
