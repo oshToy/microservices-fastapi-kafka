@@ -1,10 +1,10 @@
 import logging
 from typing import Optional, Dict
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from service import CrawlStatusService, InsertResponse
 from pydantic import BaseModel, UUID4, HttpUrl
 import metrics as metrics
-from models import Status
+from core.core_models import Status
 from fastapi.encoders import jsonable_encoder
 
 router = APIRouter()
@@ -34,7 +34,6 @@ async def post_crawler_status(crawl_status: CrawlStatusPostRequest) -> InsertRes
     metrics.POST_CRAWLER_STATUS_CNT.inc()
     return await crawl_status_service.save_crawler_status(
         status_id=crawl_status.id,
-        file_path=crawl_status.file_path,
         status=crawl_status.status,
     )
 

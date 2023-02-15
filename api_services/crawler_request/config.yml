@@ -9,4 +9,5 @@ DB_URI: "postgresql+asyncpg://postgres:postgres@db_crawler_requests:5432/crawler
 
 # KAFKA
 KAFKA_BROKER: "kafka:9092"
-NEW_CRAWLER_REQUEST_TOPIC: "crawler-request"
+CRAWLER_REQUEST_TOPIC: "crawler-request"
+CRAWLER_STATUS_TOPIC: "crawler-status"

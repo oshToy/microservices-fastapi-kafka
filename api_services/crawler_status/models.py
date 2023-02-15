@@ -1,17 +1,10 @@
 from sqlalchemy import Column, String, Enum as sqlEnum, DateTime, func
 from sqlalchemy.orm import declarative_base
 from core.db import DB
-from enum import Enum
 from sqlalchemy.dialects.postgresql import UUID
+from core.core_models import Status
 
 Base = declarative_base(metadata=DB().metadata_obj)
-
-
-class Status(str, Enum):
-    Accepted = "Accepted"
-    Running = "Running"
-    Error = "Error"
-    Complete = "Complete"
 
 
 class CrawlerStatus(Base):

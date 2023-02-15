@@ -1,5 +1,6 @@
 import aiokafka
-from models import CrawlerStatus, Status
+from models import CrawlerStatus
+from core.core_models import Status
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from core.db import DB
@@ -14,7 +15,9 @@ db = DB()
 
 
 class CrawlStatusMessageValue:
-    def __init__(self, status: Status, create_at: str, file_path: str = None):
+    def __init__(
+        self, status: Status, create_at: Union[str, None] = None, file_path: str = None
+    ):
         self.status: Status = status
         self.file_path: Union[str, None] = file_path
         self.create_at: datetime = create_at
@@ -25,8 +28,11 @@ class CrawlStatusMessageValue:
         return self._create_at
 
     @create_at.setter
-    def create_at(self, str_time: str):
-        self._create_at: datetime = datetime.fromisoformat(str_time)
+    def create_at(self, str_time: Union[str, None]):
+        if not str_time:
+            self._create_at: datetime = datetime.utcnow()
+        else:
+            self._create_at: datetime = datetime.fromisoformat(str_time)
 
     @property
     def allowed_prev_statuses(self) -> List[Status]:
@@ -50,6 +56,7 @@ class CrawlStatusService(ApiService):
         super().__init__(entity_model=CrawlerStatus)
         self.entity_model: CrawlerStatus = self.entity_model
 
+    #  add where statement that allow only legal update ( A -> R -> E/C ) = idempotency
     @staticmethod
     def get_allowed_prev_statuses(status: Status) -> List[Status]:
         if status == Status.Accepted.value:
@@ -62,12 +69,11 @@ class CrawlStatusService(ApiService):
     async def save_crawler_status(
         self,
         status_id: UUID4,
-        file_path: Union[str, None],
         status: Status = Status.Accepted.value,
     ) -> InsertResponse:
         async with AsyncSession(db.db_engine) as async_session:
             async with async_session.begin():
-                logger.info(f"Save crawler status for {file_path}")
+                logger.info(f"Save crawler status for {status_id}")
                 return await self.insert_entity(
                     async_session, id=status_id, status=status
                 )
@@ -77,6 +83,7 @@ class CrawlStatusService(ApiService):
         status_id: UUID4,
         allowed_prev_statuses: List[Status],
         update_at: datetime = datetime.utcnow(),
+        upsert: bool = False,
         **values,
     ) -> InsertResponse:
         async with AsyncSession(db.db_engine) as async_session:
@@ -89,6 +96,7 @@ class CrawlStatusService(ApiService):
                     status_id,
                     where_clauses=where_clause,
                     update_at=update_at,
+                    upsert=upsert,
                     **values,
                 )
 
@@ -99,24 +107,28 @@ class CrawlStatusService(ApiService):
                 return DB.row_to_dict(status)
 
     async def handle_status_updates(self, msg: aiokafka.ConsumerRecord):
-
-        status_id: str = msg.key
-        crawler_status: CrawlStatusMessageValue = CrawlStatusMessageValue(**msg.value)
-        logger.info(f"handle_status_updates {status_id, crawler_status.status}")
-        if crawler_status.status == Status.Running.value:
-            return await self.save_crawler_status(
-                status_id=status_id, status=crawler_status.status, file_path=None
+        try:
+            status_id: str = msg.key
+            logger.info(f"handle_status_updates {status_id}")
+            crawler_status: CrawlStatusMessageValue = CrawlStatusMessageValue(
+                **msg.value
             )
-        elif crawler_status.status in {
-            Status.Running.value,
-            Status.Error.value,
-            Status.Complete.value,
-        }:
-            # TODO add where statement that allow only legal update ( A -> R -> E/C ) = idempotency
-            return await self.update_crawler_status(
-                status_id=status_id,
-                allowed_prev_statuses=crawler_status.allowed_prev_statuses,
-                **crawler_status.to_update_dict(),
-            )
-
-        return
+            logger.info(f"handle_status_updates {status_id, crawler_status.status}")
+            if crawler_status.status == Status.Accepted.value:
+                return await self.save_crawler_status(
+                    status_id=status_id, status=crawler_status.status
+                )
+            elif crawler_status.status in {
+                Status.Running.value,
+                Status.Error.value,
+                Status.Complete.value,
+            }:
+                return await self.update_crawler_status(
+                    status_id=status_id,
+                    allowed_prev_statuses=crawler_status.allowed_prev_statuses,
+                    upsert=True,
+                    **crawler_status.to_update_dict(),
+                )
+        except Exception as e:
+            logger.error(e.__traceback__)
+            logger.error(e)

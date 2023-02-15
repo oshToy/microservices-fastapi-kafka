@@ -97,6 +97,7 @@ services:
       - API_CRAWLER_REQUEST_DB_URI=postgresql+asyncpg://postgres:postgres@db_crawler_request:5432/crawlers
       - API_CRAWLER_REQUEST_KAFKA_BROKER=kafka:9092
       - API_CRAWLER_REQUEST_CRAWLER_REQUEST_TOPIC=crawler-request
+      - API_CRAWLER_REQUEST_CRAWLER_STATUS_TOPIC=crawler-status
     depends_on:
       kafka:
         condition: service_healthy

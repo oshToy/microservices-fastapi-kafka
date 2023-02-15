@@ -52,10 +52,12 @@ class ApiService(metaclass=MetaSingleton):
         entity_id: UUID4,
         where_clauses: list,
         allow_change_id=False,
+        upsert=False,
         **values,
     ):
         logger.info(f"Try to Update Entity {values}")
-        if allow_change_id is False and "id" in values:
+
+        if "id" in values and allow_change_id is False:
             del values["id"]
 
         update_statement = update(self.entity_model).where(
@@ -69,7 +71,10 @@ class ApiService(metaclass=MetaSingleton):
         )
         row_counts = update_result.rowcount
         if row_counts == 0:
-            ApiService.raise_not_found_exception(entity_id)
+            if upsert and not upsert:
+                ApiService.raise_not_found_exception(entity_id)
+            else:
+                await self.insert_entity(async_session, id=entity_id, **values)
         if row_counts > 1:
             raise HTTPException(status_code=500, detail="Update more than one row !!")
         return InsertResponse(id=entity_id)

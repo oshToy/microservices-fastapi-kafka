@@ -1,5 +1,6 @@
+import datetime
 from dataclasses import asdict, dataclass
-
+import asyncio
 from models import Crawler
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
@@ -9,6 +10,7 @@ from pydantic import UUID4
 from core.api_service import ApiService, InsertResponse
 from core.aio_kafka import AioProducer
 from core import config_loader as config_loader
+from core.core_models import Status
 
 config = config_loader.Config()
 logger = logging.getLogger(__name__)
@@ -19,6 +21,11 @@ db = DB()
 class CrawlRequestMessage:
     id: str
     html_url: str
+
+
+@dataclass
+class CrawlStatusMessage:
+    status: Status
 
 
 class CrawlerRequestService(ApiService):
@@ -37,9 +44,18 @@ class CrawlerRequestService(ApiService):
                     asdict(
                         CrawlRequestMessage(id=str(res.get("id")), html_url=html_url)
                     ),
-                )
-
+                ),
                 # if error occurred id is wasted, no harm
+
+                await AioProducer().produce_message_and_wait_for_ack(
+                    config.get(config_loader.CRAWLER_STATUS_TOPIC),
+                    key=str(res.get("id")),
+                    message=asdict(
+                        CrawlStatusMessage(
+                            status=Status.Accepted.value,
+                        )
+                    ),
+                ),
                 return res
 
     async def get_crawler_by_id(self, crawler_id: UUID4) -> Dict:

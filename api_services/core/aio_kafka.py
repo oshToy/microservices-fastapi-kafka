@@ -17,11 +17,11 @@ class AioProducer(metaclass=MetaSingleton):
     def __init_producer(self) -> AIOKafkaProducer:
         return AIOKafkaProducer(
             bootstrap_servers=config.get(config_loader.KAFKA_BROKER),
-            key_serializer=self.__string_deserializer,
+            key_serializer=self.__string_serializer,
             value_serializer=self.__json_serializer,
         )
 
-    def __string_deserializer(self, value: Union[str, None]):
+    def __string_serializer(self, value: Union[str, None]):
         if value is None:
             return
         return value.encode()
@@ -35,8 +35,10 @@ class AioProducer(metaclass=MetaSingleton):
     def __json_serializer(self, value: str):
         return json.dumps(value).encode()
 
-    async def produce_message_and_wait_for_ack(self, topic: str, message: dict):
-        ack = await self.aio_producer.send_and_wait(topic, message)
+    async def produce_message_and_wait_for_ack(
+        self, topic: str, message: dict, key: str = None
+    ):
+        ack = await self.aio_producer.send_and_wait(topic, message, key=key)
         logger.info(ack)
 
 
